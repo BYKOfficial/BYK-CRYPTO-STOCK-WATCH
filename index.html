@@ -7,8 +7,7 @@
   <style>
     body { background:#0d1117; color:white; font-family:sans-serif; text-align:center; }
     .card { background:#161b22; margin:10px; padding:15px; border-radius:12px; }
-    input { padding:10px; width:80%; margin:10px; border-radius:10px; }
-    button { padding:10px; border-radius:10px; margin:5px; }
+    input,button { padding:10px; margin:5px; border-radius:10px; }
   </style>
 </head>
 
@@ -39,11 +38,27 @@
 <h2>📊 BTC Chart</h2>
 <iframe src="https://s.tradingview.com/widgetembed/?symbol=BTCUSD" width="100%" height="300"></iframe>
 
+<h2>💰 Portfolio Tracker</h2>
+<input id="coinName" placeholder="Coin">
+<input id="amount" placeholder="Amount">
+<button onclick="addPortfolio()">Add</button>
+<div id="portfolio"></div>
+
+<h2>📰 News</h2>
+<div id="news"></div>
+
+<h2>📢 Share</h2>
+<button onclick="shareSite()">Share</button>
+
+<h2>💰 Ad Space</h2>
+<div style="background:#222;padding:20px;">Ads Here</div>
+
 <script>
 let allCoins = [];
 let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+let portfolio = JSON.parse(localStorage.getItem("portfolio")) || [];
 
-// LOAD
+// LOAD DATA
 async function loadCrypto(){
   try{
     const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
@@ -55,8 +70,9 @@ async function loadCrypto(){
     showStats(data);
     showNextBTC(data);
     showWatchlist();
+    showPortfolio();
 
-    document.getElementById("status").innerText = "✅ Auto Updated";
+    document.getElementById("status").innerText = "✅ Live";
 
   }catch{
     document.getElementById("status").innerText = "❌ Reloading...";
@@ -94,13 +110,12 @@ function addToWatch(name){
     showWatchlist();
   }
 }
-
 function showWatchlist(){
   document.getElementById("watchlist").innerHTML =
     watchlist.map(w=>`<p>⭐ ${w}</p>`).join("");
 }
 
-// STATS
+// GAINERS / LOSERS
 function showStats(data){
   const gainers = [...data].sort((a,b)=>b.price_change_percentage_24h - a.price_change_percentage_24h).slice(0,5);
   const losers = [...data].sort((a,b)=>a.price_change_percentage_24h - b.price_change_percentage_24h).slice(0,5);
@@ -120,16 +135,56 @@ function showNextBTC(data){
     coins.map(c=>`<p>🔥 ${c.name}</p>`).join("");
 }
 
+// PORTFOLIO
+function addPortfolio(){
+  const name = document.getElementById("coinName").value;
+  const amt = document.getElementById("amount").value;
+  portfolio.push({name, amt});
+  localStorage.setItem("portfolio", JSON.stringify(portfolio));
+  showPortfolio();
+}
+function showPortfolio(){
+  document.getElementById("portfolio").innerHTML =
+    portfolio.map(p=>`<p>${p.name}: ${p.amt}</p>`).join("");
+}
+
+// NEWS
+function loadNews(){
+  const news = [
+    "Bitcoin breakout soon 🚀",
+    "Ethereum upgrade coming 🔥",
+    "Altcoins season starting 📈"
+  ];
+  document.getElementById("news").innerHTML =
+    news.map(n=>`<p>${n}</p>`).join("");
+}
+
+// SHARE
+function shareSite(){
+  if(navigator.share){
+    navigator.share({
+      title:"BYK Crypto",
+      text:"Check this site",
+      url:window.location.href
+    });
+  }else{
+    alert("Copy URL and share!");
+  }
+}
+
 // DARK MODE
 function toggleMode(){
   document.body.style.background =
     document.body.style.background === "white" ? "#0d1117" : "white";
 }
 
-// AUTO REFRESH
+// AUTO SYSTEM
 setInterval(loadCrypto,15000);
+setTimeout(()=>alert("🔥 Welcome to BYK Crypto"),3000);
 
+// INIT
 loadCrypto();
+loadNews();
 </script>
 
 </body>
