@@ -1,53 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>BYK Crypto & Stock Watch</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <style>
-    body { background:#0d1117; color:white; font-family:sans-serif; text-align:center; }
-    .card { background:#161b22; margin:10px; padding:15px; border-radius:12px; }
-    input { padding:10px; width:80%; margin:10px; border-radius:10px; }
-    button { padding:10px; border-radius:10px; margin:5px; }
-  </style>
-</head>
-
-<body>
-
-<h1>🚀 BYK Crypto & Stock Watch</h1>
-
-<!-- DARK MODE -->
-<button onclick="toggleMode()">🌙 Toggle Mode</button>
-
-<!-- SEARCH -->
-<input id="search" placeholder="Search crypto..." onkeyup="filterCoins()">
-
-<p id="status">Loading data...</p>
-
-<!-- CRYPTO -->
-<div id="crypto"></div>
-
-<!-- WATCHLIST -->
-<h2>⭐ Watchlist</h2>
-<div id="watchlist"></div>
-
-<!-- GAINERS -->
-<h2>🚀 Top Gainers</h2>
-<div id="gainers"></div>
-
-<!-- LOSERS -->
-<h2>📉 Top Losers</h2>
-<div id="losers"></div>
-
-<!-- NEXT BTC -->
-<h2>🔥 Next Bitcoin</h2>
-<div id="nextbtc"></div>
-
-<!-- CHART -->
-<h2>📊 Bitcoin Chart</h2>
-<iframe src="https://s.tradingview.com/widgetembed/?symbol=BTCUSD" width="100%" height="300"></iframe>
-
-<script>
 let allCoins = [];
 let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
 
@@ -64,10 +14,13 @@ async function loadCrypto(){
     showNextBTC(data);
     showWatchlist();
 
-    document.getElementById("status").innerText = "✅ Data Loaded";
+    detectHotCoins(data);
+
+    document.getElementById("status").innerText = "✅ Auto Updated";
 
   }catch{
-    document.getElementById("status").innerText = "❌ Error loading data";
+    document.getElementById("status").innerText = "❌ Reloading...";
+    setTimeout(loadCrypto,3000);
   }
 }
 
@@ -75,9 +28,12 @@ async function loadCrypto(){
 function showCoins(coins){
   let html="";
   coins.forEach(c=>{
+
+    let hot = c.price_change_percentage_24h > 5 ? "🔥 HOT" : "";
+
     html += `
     <div class="card">
-      <h3>${c.name}</h3>
+      <h3>${c.name} ${hot}</h3>
       <p>$${c.current_price}</p>
       <button onclick="addToWatch('${c.name}')">⭐ Save</button>
     </div>`;
@@ -85,7 +41,16 @@ function showCoins(coins){
   document.getElementById("crypto").innerHTML = html;
 }
 
-// SEARCH
+// HOT COINS ALERT
+function detectHotCoins(data){
+  data.forEach(c=>{
+    if(c.price_change_percentage_24h > 10){
+      console.log("HOT COIN:", c.name);
+    }
+  });
+}
+
+// AUTO SEARCH
 function filterCoins(){
   const val = document.getElementById("search").value.toLowerCase();
   const filtered = allCoins.filter(c=>c.name.toLowerCase().includes(val));
@@ -102,14 +67,11 @@ function addToWatch(name){
 }
 
 function showWatchlist(){
-  let html="";
-  watchlist.forEach(w=>{
-    html += `<p>⭐ ${w}</p>`;
-  });
-  document.getElementById("watchlist").innerHTML = html;
+  document.getElementById("watchlist").innerHTML =
+    watchlist.map(w=>`<p>⭐ ${w}</p>`).join("");
 }
 
-// GAINERS & LOSERS
+// STATS
 function showStats(data){
   const gainers = [...data].sort((a,b)=>b.price_change_percentage_24h - a.price_change_percentage_24h).slice(0,5);
   const losers = [...data].sort((a,b)=>a.price_change_percentage_24h - b.price_change_percentage_24h).slice(0,5);
@@ -126,20 +88,29 @@ function showNextBTC(data){
   const coins = data.filter(c=>c.market_cap < 5000000000 && c.price_change_percentage_24h > 5).slice(0,5);
 
   document.getElementById("nextbtc").innerHTML =
-    coins.map(c=>`<p>🔥 ${c.name} (${c.price_change_percentage_24h.toFixed(2)}%)</p>`).join("");
+    coins.map(c=>`<p>🔥 ${c.name}</p>`).join("");
 }
 
-// DARK MODE
-function toggleMode(){
-  document.body.style.background =
-    document.body.style.background === "white" ? "#0d1117" : "white";
+// AUTO THEME
+function autoTheme(){
+  const hour = new Date().getHours();
+  document.body.style.background = (hour > 6 && hour < 18) ? "white" : "#0d1117";
 }
 
-// AUTO REFRESH
+// AUTO ALERT
+function notify(msg){
+  if(Notification.permission === "granted"){
+    new Notification(msg);
+  }
+}
+
+if(Notification.permission !== "granted"){
+  Notification.requestPermission();
+}
+
+// AUTO RUN
 setInterval(loadCrypto,15000);
+setInterval(autoTheme,60000);
 
 loadCrypto();
-</script>
-
-</body>
-</html>
+autoTheme();
