@@ -7,20 +7,30 @@
 <body style="background:black;color:white;text-align:center;font-family:sans-serif;">
 
 <h1>🚀 BYK Crypto & Stock Watch</h1>
-<p>Live Crypto Prices</p>
+<p id="status">Loading crypto data...</p>
 
 <div id="crypto"></div>
 
 <script>
-fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd")
-.then(res => res.json())
-.then(data => {
-  let html = "";
-  data.slice(0,10).forEach(c => {
-    html += `<p>${c.name}: $${c.current_price}</p>`;
-  });
-  document.getElementById("crypto").innerHTML = html;
-});
+async function loadCrypto() {
+  try {
+    const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
+    const data = await res.json();
+
+    let html = "";
+    data.slice(0,10).forEach(c => {
+      html += `<p>${c.name}: $${c.current_price}</p>`;
+    });
+
+    document.getElementById("crypto").innerHTML = html;
+    document.getElementById("status").innerText = "✅ Data Loaded";
+
+  } catch (err) {
+    document.getElementById("status").innerText = "❌ Error loading data";
+  }
+}
+
+loadCrypto();
 </script>
 
 </body>
