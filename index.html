@@ -2,34 +2,114 @@
 <html>
 <head>
   <title>BYK Crypto & Stock Watch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body { background:#0d1117; color:white; font-family:sans-serif; text-align:center; }
+    .card { background:#161b22; margin:10px; padding:15px; border-radius:12px; }
+    input { padding:10px; width:80%; margin:10px; border-radius:10px; }
+    button { padding:10px 20px; border-radius:10px; cursor:pointer; }
+    .buy { color:lime; }
+    .sell { color:red; }
+    .hold { color:yellow; }
+  </style>
 </head>
 
-<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
+<body>
 
 <h1>🚀 BYK Crypto & Stock Watch</h1>
-<p id="status">Loading crypto data...</p>
 
+<!-- SEARCH -->
+<input id="search" placeholder="Search crypto..." onkeyup="filterCoins()">
+
+<!-- STATUS -->
+<p id="status">Loading data...</p>
+
+<!-- CRYPTO LIST -->
 <div id="crypto"></div>
 
+<!-- NEXT BTC -->
+<h2>🔥 Next Bitcoin Finder</h2>
+<div id="nextbtc"></div>
+
+<!-- CHART -->
+<h2>📊 Live Chart (Bitcoin)</h2>
+<iframe 
+  src="https://s.tradingview.com/widgetembed/?symbol=BTCUSD&interval=60" 
+  width="100%" height="300">
+</iframe>
+
 <script>
+let allCoins = [];
+
+// LOAD DATA
 async function loadCrypto() {
   try {
     const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
     const data = await res.json();
+    allCoins = data;
 
-    let html = "";
-    data.slice(0,10).forEach(c => {
-      html += `<p>${c.name}: $${c.current_price}</p>`;
-    });
+    showCoins(data.slice(0,20));
+    showNextBTC(data);
 
-    document.getElementById("crypto").innerHTML = html;
-    document.getElementById("status").innerText = "✅ Data Loaded";
+    document.getElementById("status").innerText = "✅ Live Data Loaded";
 
-  } catch (err) {
+  } catch {
     document.getElementById("status").innerText = "❌ Error loading data";
   }
 }
 
+// SHOW COINS
+function showCoins(coins) {
+  let html = "";
+  coins.forEach(c => {
+
+    let signal = "HOLD";
+    let cls = "hold";
+
+    if(c.current_price < 25000){ signal="BUY"; cls="buy"; }
+    else if(c.current_price > 60000){ signal="SELL"; cls="sell"; }
+
+    html += `
+    <div class="card">
+      <h3>${c.name}</h3>
+      <p>💰 Price: $${c.current_price}</p>
+      <p class="${cls}">🤖 AI Signal: ${signal}</p>
+    </div>`;
+  });
+
+  document.getElementById("crypto").innerHTML = html;
+}
+
+// SEARCH
+function filterCoins(){
+  const val = document.getElementById("search").value.toLowerCase();
+  const filtered = allCoins.filter(c => c.name.toLowerCase().includes(val));
+  showCoins(filtered.slice(0,20));
+}
+
+// NEXT BITCOIN
+function showNextBTC(data){
+  let html = "";
+  const coins = data
+    .filter(c => c.market_cap < 5000000000 && c.price_change_percentage_24h > 5)
+    .slice(0,5);
+
+  coins.forEach(c => {
+    html += `
+    <div class="card">
+      <h3>${c.name}</h3>
+      <p>🚀 Growth: ${c.price_change_percentage_24h.toFixed(2)}%</p>
+    </div>`;
+  });
+
+  document.getElementById("nextbtc").innerHTML = html;
+}
+
+// AUTO REFRESH
+setInterval(loadCrypto, 15000);
+
+// START
 loadCrypto();
 </script>
 
