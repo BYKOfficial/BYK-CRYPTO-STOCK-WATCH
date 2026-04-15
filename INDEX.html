@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>BYK Crypto & Stock Watch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
+
+<h1>🚀 BYK Crypto & Stock Watch</h1>
+<p>Live Crypto Prices</p>
+
+<div id="crypto"></div>
+
+<script>
+fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd")
+.then(res => res.json())
+.then(data => {
+  let html = "";
+  data.slice(0,10).forEach(c => {
+    html += `<p>${c.name}: $${c.current_price}</p>`;
+  });
+  document.getElementById("crypto").innerHTML = html;
+});
+</script>
+
+</body>
+</html>
