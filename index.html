@@ -8,10 +8,7 @@
     body { background:#0d1117; color:white; font-family:sans-serif; text-align:center; }
     .card { background:#161b22; margin:10px; padding:15px; border-radius:12px; }
     input { padding:10px; width:80%; margin:10px; border-radius:10px; }
-    button { padding:10px 20px; border-radius:10px; cursor:pointer; }
-    .buy { color:lime; }
-    .sell { color:red; }
-    .hold { color:yellow; }
+    button { padding:10px; border-radius:10px; margin:5px; }
   </style>
 </head>
 
@@ -19,97 +16,128 @@
 
 <h1>🚀 BYK Crypto & Stock Watch</h1>
 
+<!-- DARK MODE -->
+<button onclick="toggleMode()">🌙 Toggle Mode</button>
+
 <!-- SEARCH -->
 <input id="search" placeholder="Search crypto..." onkeyup="filterCoins()">
 
-<!-- STATUS -->
 <p id="status">Loading data...</p>
 
-<!-- CRYPTO LIST -->
+<!-- CRYPTO -->
 <div id="crypto"></div>
 
+<!-- WATCHLIST -->
+<h2>⭐ Watchlist</h2>
+<div id="watchlist"></div>
+
+<!-- GAINERS -->
+<h2>🚀 Top Gainers</h2>
+<div id="gainers"></div>
+
+<!-- LOSERS -->
+<h2>📉 Top Losers</h2>
+<div id="losers"></div>
+
 <!-- NEXT BTC -->
-<h2>🔥 Next Bitcoin Finder</h2>
+<h2>🔥 Next Bitcoin</h2>
 <div id="nextbtc"></div>
 
 <!-- CHART -->
-<h2>📊 Live Chart (Bitcoin)</h2>
-<iframe 
-  src="https://s.tradingview.com/widgetembed/?symbol=BTCUSD&interval=60" 
-  width="100%" height="300">
-</iframe>
+<h2>📊 Bitcoin Chart</h2>
+<iframe src="https://s.tradingview.com/widgetembed/?symbol=BTCUSD" width="100%" height="300"></iframe>
 
 <script>
 let allCoins = [];
+let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
 
 // LOAD DATA
-async function loadCrypto() {
-  try {
+async function loadCrypto(){
+  try{
     const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
     const data = await res.json();
+
     allCoins = data;
 
     showCoins(data.slice(0,20));
+    showStats(data);
     showNextBTC(data);
+    showWatchlist();
 
-    document.getElementById("status").innerText = "✅ Live Data Loaded";
+    document.getElementById("status").innerText = "✅ Data Loaded";
 
-  } catch {
+  }catch{
     document.getElementById("status").innerText = "❌ Error loading data";
   }
 }
 
 // SHOW COINS
-function showCoins(coins) {
-  let html = "";
-  coins.forEach(c => {
-
-    let signal = "HOLD";
-    let cls = "hold";
-
-    if(c.current_price < 25000){ signal="BUY"; cls="buy"; }
-    else if(c.current_price > 60000){ signal="SELL"; cls="sell"; }
-
+function showCoins(coins){
+  let html="";
+  coins.forEach(c=>{
     html += `
     <div class="card">
       <h3>${c.name}</h3>
-      <p>💰 Price: $${c.current_price}</p>
-      <p class="${cls}">🤖 AI Signal: ${signal}</p>
+      <p>$${c.current_price}</p>
+      <button onclick="addToWatch('${c.name}')">⭐ Save</button>
     </div>`;
   });
-
   document.getElementById("crypto").innerHTML = html;
 }
 
 // SEARCH
 function filterCoins(){
   const val = document.getElementById("search").value.toLowerCase();
-  const filtered = allCoins.filter(c => c.name.toLowerCase().includes(val));
+  const filtered = allCoins.filter(c=>c.name.toLowerCase().includes(val));
   showCoins(filtered.slice(0,20));
 }
 
-// NEXT BITCOIN
-function showNextBTC(data){
-  let html = "";
-  const coins = data
-    .filter(c => c.market_cap < 5000000000 && c.price_change_percentage_24h > 5)
-    .slice(0,5);
+// WATCHLIST
+function addToWatch(name){
+  if(!watchlist.includes(name)){
+    watchlist.push(name);
+    localStorage.setItem("watchlist", JSON.stringify(watchlist));
+    showWatchlist();
+  }
+}
 
-  coins.forEach(c => {
-    html += `
-    <div class="card">
-      <h3>${c.name}</h3>
-      <p>🚀 Growth: ${c.price_change_percentage_24h.toFixed(2)}%</p>
-    </div>`;
+function showWatchlist(){
+  let html="";
+  watchlist.forEach(w=>{
+    html += `<p>⭐ ${w}</p>`;
   });
+  document.getElementById("watchlist").innerHTML = html;
+}
 
-  document.getElementById("nextbtc").innerHTML = html;
+// GAINERS & LOSERS
+function showStats(data){
+  const gainers = [...data].sort((a,b)=>b.price_change_percentage_24h - a.price_change_percentage_24h).slice(0,5);
+  const losers = [...data].sort((a,b)=>a.price_change_percentage_24h - b.price_change_percentage_24h).slice(0,5);
+
+  document.getElementById("gainers").innerHTML =
+    gainers.map(c=>`<p>🚀 ${c.name} (${c.price_change_percentage_24h.toFixed(2)}%)</p>`).join("");
+
+  document.getElementById("losers").innerHTML =
+    losers.map(c=>`<p>📉 ${c.name} (${c.price_change_percentage_24h.toFixed(2)}%)</p>`).join("");
+}
+
+// NEXT BTC
+function showNextBTC(data){
+  const coins = data.filter(c=>c.market_cap < 5000000000 && c.price_change_percentage_24h > 5).slice(0,5);
+
+  document.getElementById("nextbtc").innerHTML =
+    coins.map(c=>`<p>🔥 ${c.name} (${c.price_change_percentage_24h.toFixed(2)}%)</p>`).join("");
+}
+
+// DARK MODE
+function toggleMode(){
+  document.body.style.background =
+    document.body.style.background === "white" ? "#0d1117" : "white";
 }
 
 // AUTO REFRESH
-setInterval(loadCrypto, 15000);
+setInterval(loadCrypto,15000);
 
-// START
 loadCrypto();
 </script>
 
