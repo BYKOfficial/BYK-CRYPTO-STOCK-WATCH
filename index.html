@@ -8,6 +8,7 @@
     body { background:#0d1117; color:white; font-family:sans-serif; text-align:center; }
     .card { background:#161b22; margin:10px; padding:15px; border-radius:12px; }
     input,button { padding:10px; margin:5px; border-radius:10px; }
+    .hot { color:orange; }
   </style>
 </head>
 
@@ -15,7 +16,7 @@
 
 <h1>🚀 BYK Crypto & Stock Watch</h1>
 
-<button onclick="toggleMode()">🌙 Toggle Mode</button>
+<button onclick="toggleMode()">🌙 Theme</button>
 
 <input id="search" placeholder="Search crypto..." onkeyup="filterCoins()">
 
@@ -26,19 +27,19 @@
 <h2>⭐ Watchlist</h2>
 <div id="watchlist"></div>
 
-<h2>🚀 Top Gainers</h2>
+<h2>🚀 Gainers</h2>
 <div id="gainers"></div>
 
-<h2>📉 Top Losers</h2>
+<h2>📉 Losers</h2>
 <div id="losers"></div>
 
 <h2>🔥 Next Bitcoin</h2>
 <div id="nextbtc"></div>
 
-<h2>📊 BTC Chart</h2>
+<h2>📊 Chart</h2>
 <iframe src="https://s.tradingview.com/widgetembed/?symbol=BTCUSD" width="100%" height="300"></iframe>
 
-<h2>💰 Portfolio Tracker</h2>
+<h2>💰 Portfolio</h2>
 <input id="coinName" placeholder="Coin">
 <input id="amount" placeholder="Amount">
 <button onclick="addPortfolio()">Add</button>
@@ -47,24 +48,23 @@
 <h2>📰 News</h2>
 <div id="news"></div>
 
+<h2>⏰ Time</h2>
+<div id="clock"></div>
+
 <h2>📢 Share</h2>
 <button onclick="shareSite()">Share</button>
 
-<h2>💰 Ad Space</h2>
-<div style="background:#222;padding:20px;">Ads Here</div>
-
 <script>
-let allCoins = [];
-let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
-let portfolio = JSON.parse(localStorage.getItem("portfolio")) || [];
+let allCoins=[];
+let watchlist=JSON.parse(localStorage.getItem("watchlist"))||[];
+let portfolio=JSON.parse(localStorage.getItem("portfolio"))||[];
 
-// LOAD DATA
+// LOAD
 async function loadCrypto(){
   try{
-    const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
-    const data = await res.json();
-
-    allCoins = data;
+    const res=await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
+    const data=await res.json();
+    allCoins=data;
 
     showCoins(data.slice(0,20));
     showStats(data);
@@ -72,115 +72,100 @@ async function loadCrypto(){
     showWatchlist();
     showPortfolio();
 
-    document.getElementById("status").innerText = "✅ Live";
-
+    document.getElementById("status").innerText="✅ Live";
   }catch{
-    document.getElementById("status").innerText = "❌ Reloading...";
+    document.getElementById("status").innerText="❌ Retry...";
     setTimeout(loadCrypto,3000);
   }
 }
 
-// SHOW COINS
+// SHOW
 function showCoins(coins){
-  let html="";
-  coins.forEach(c=>{
-    let hot = c.price_change_percentage_24h > 5 ? "🔥" : "";
-    html += `
-    <div class="card">
-      <h3>${c.name} ${hot}</h3>
-      <p>$${c.current_price}</p>
-      <button onclick="addToWatch('${c.name}')">⭐ Save</button>
-    </div>`;
-  });
-  document.getElementById("crypto").innerHTML = html;
+  document.getElementById("crypto").innerHTML =
+    coins.map(c=>`
+      <div class="card">
+        <h3>${c.name} ${c.price_change_percentage_24h>5?"🔥":""}</h3>
+        <p>$${c.current_price}</p>
+        <button onclick="addToWatch('${c.name}')">⭐</button>
+      </div>`).join("");
 }
 
 // SEARCH
 function filterCoins(){
-  const val = document.getElementById("search").value.toLowerCase();
-  const filtered = allCoins.filter(c=>c.name.toLowerCase().includes(val));
-  showCoins(filtered.slice(0,20));
+  const val=document.getElementById("search").value.toLowerCase();
+  showCoins(allCoins.filter(c=>c.name.toLowerCase().includes(val)).slice(0,20));
 }
 
 // WATCHLIST
-function addToWatch(name){
-  if(!watchlist.includes(name)){
-    watchlist.push(name);
-    localStorage.setItem("watchlist", JSON.stringify(watchlist));
+function addToWatch(n){
+  if(!watchlist.includes(n)){
+    watchlist.push(n);
+    localStorage.setItem("watchlist",JSON.stringify(watchlist));
     showWatchlist();
   }
 }
 function showWatchlist(){
-  document.getElementById("watchlist").innerHTML =
+  document.getElementById("watchlist").innerHTML=
     watchlist.map(w=>`<p>⭐ ${w}</p>`).join("");
 }
 
-// GAINERS / LOSERS
-function showStats(data){
-  const gainers = [...data].sort((a,b)=>b.price_change_percentage_24h - a.price_change_percentage_24h).slice(0,5);
-  const losers = [...data].sort((a,b)=>a.price_change_percentage_24h - b.price_change_percentage_24h).slice(0,5);
+// STATS
+function showStats(d){
+  const g=[...d].sort((a,b)=>b.price_change_percentage_24h-a.price_change_percentage_24h).slice(0,5);
+  const l=[...d].sort((a,b)=>a.price_change_percentage_24h-b.price_change_percentage_24h).slice(0,5);
 
-  document.getElementById("gainers").innerHTML =
-    gainers.map(c=>`<p>🚀 ${c.name} (${c.price_change_percentage_24h.toFixed(2)}%)</p>`).join("");
-
-  document.getElementById("losers").innerHTML =
-    losers.map(c=>`<p>📉 ${c.name} (${c.price_change_percentage_24h.toFixed(2)}%)</p>`).join("");
+  document.getElementById("gainers").innerHTML=g.map(c=>`<p>${c.name}</p>`).join("");
+  document.getElementById("losers").innerHTML=l.map(c=>`<p>${c.name}</p>`).join("");
 }
 
 // NEXT BTC
-function showNextBTC(data){
-  const coins = data.filter(c=>c.market_cap < 5000000000 && c.price_change_percentage_24h > 5).slice(0,5);
-
-  document.getElementById("nextbtc").innerHTML =
-    coins.map(c=>`<p>🔥 ${c.name}</p>`).join("");
+function showNextBTC(d){
+  const c=d.filter(x=>x.market_cap<5000000000 && x.price_change_percentage_24h>5).slice(0,5);
+  document.getElementById("nextbtc").innerHTML=c.map(x=>`<p>🔥 ${x.name}</p>`).join("");
 }
 
 // PORTFOLIO
 function addPortfolio(){
-  const name = document.getElementById("coinName").value;
-  const amt = document.getElementById("amount").value;
-  portfolio.push({name, amt});
-  localStorage.setItem("portfolio", JSON.stringify(portfolio));
+  const n=document.getElementById("coinName").value;
+  const a=document.getElementById("amount").value;
+  portfolio.push({n,a});
+  localStorage.setItem("portfolio",JSON.stringify(portfolio));
   showPortfolio();
 }
 function showPortfolio(){
-  document.getElementById("portfolio").innerHTML =
-    portfolio.map(p=>`<p>${p.name}: ${p.amt}</p>`).join("");
+  document.getElementById("portfolio").innerHTML=
+    portfolio.map(p=>`<p>${p.n}: ${p.a}</p>`).join("");
 }
 
 // NEWS
 function loadNews(){
-  const news = [
-    "Bitcoin breakout soon 🚀",
-    "Ethereum upgrade coming 🔥",
-    "Altcoins season starting 📈"
-  ];
-  document.getElementById("news").innerHTML =
-    news.map(n=>`<p>${n}</p>`).join("");
+  const news=["BTC rally 🚀","ETH update 🔥","Altcoins boom 📈"];
+  document.getElementById("news").innerHTML=news.map(n=>`<p>${n}</p>`).join("");
 }
+
+// CLOCK
+setInterval(()=>{
+  document.getElementById("clock").innerText=new Date().toLocaleTimeString();
+},1000);
 
 // SHARE
 function shareSite(){
   if(navigator.share){
-    navigator.share({
-      title:"BYK Crypto",
-      text:"Check this site",
-      url:window.location.href
-    });
+    navigator.share({title:"BYK Crypto",url:location.href});
   }else{
-    alert("Copy URL and share!");
+    alert("Copy link to share");
   }
 }
 
-// DARK MODE
+// THEME
 function toggleMode(){
-  document.body.style.background =
-    document.body.style.background === "white" ? "#0d1117" : "white";
+  document.body.style.background=
+    document.body.style.background==="white"?"#0d1117":"white";
 }
 
-// AUTO SYSTEM
+// AUTO
 setInterval(loadCrypto,15000);
-setTimeout(()=>alert("🔥 Welcome to BYK Crypto"),3000);
+setTimeout(()=>alert("🔥 Welcome"),3000);
 
 // INIT
 loadCrypto();
